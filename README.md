@@ -214,6 +214,30 @@ var line = new LeaderLine(startElement, endElement, {hide: true});
 button.addEventListener('click', function() { line.show(); });
 ```
 
+### `customSvg` option
+
+Another option valid only for constructor is `customSvg`. This option lets you pass an already created `svg` element for leader-line to use instead of creating a new one. This can be useful for integrating with others libraries like React.
+
+```js
+class Line extends React.Component {
+  componentWillUnmount () {
+    if (this.line) {
+      this.line.remove();
+    }
+  }
+
+  setupInstance (ref) {
+    this.line = new LeaderLine(this.props.startElement, this.props.endElement, { customSvg: ref });
+  }
+
+  render () {
+    return (
+      <svg ref={ ref => this.setupInstance(ref) } />
+    );
+  }
+}
+```
+
 ## Methods
 
 ### `setOptions`
