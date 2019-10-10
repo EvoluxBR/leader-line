@@ -962,15 +962,23 @@
       }
     });
 
-    if (props.baseWindow && props.svg) {
-      props.baseWindow.document.body.removeChild(props.svg);
+    if (props.customSvg) {
+      props.svg = svg = props.customSvg;
+      while (svg.firstChild) {
+        svg.removeChild(svg.firstChild);
+      }
     }
+    else {
+      if (props.svg && props.baseWindow)
+        props.baseWindow.document.body.removeChild(props.svg);
+      props.svg = svg = baseDocument.createElementNS(SVG_NS, 'svg');
+    }
+
     props.baseWindow = newWindow;
     setupWindow(newWindow);
     props.bodyOffset = getBodyOffset(newWindow); // Get `bodyOffset`
 
     // Main SVG
-    props.svg = svg = baseDocument.createElementNS(SVG_NS, 'svg');
     svg.className.baseVal = APP_ID;
     if (!svg.viewBox.baseVal) { svg.setAttribute('viewBox', '0 0 0 0'); } // for Firefox bug
     props.defs = defs = svg.appendChild(baseDocument.createElementNS(SVG_NS, 'defs'));
@@ -1110,7 +1118,9 @@
       svg.style.visibility = 'hidden';
     }
 
-    baseDocument.body.appendChild(svg);
+    if (!props.customSvg) {
+      baseDocument.body.appendChild(svg);
+    }
 
     // label (after appendChild(svg), bBox is used)
     [0, 1, 2].forEach(function(i) {
@@ -2351,7 +2361,10 @@
     if (needs.path || updated.position) {
       updated.path = updatePath(props);
     }
-    updated.viewBox = updateViewBox(props);
+    if (!props.disableViewBox) {
+      updated.viewBox = updateViewBox(props);
+    }
+
     updated.mask = updateMask(props);
     if (needs.effect) {
       setEffect(props);
@@ -2568,6 +2581,10 @@
 
     newOptions = newOptions || {};
 
+    if (typeof(newOptions.disableViewBox) !== 'undefined') {
+      props.disableViewBox = newOptions.disableViewBox;
+    }
+
     // anchorSE
     ['start', 'end'].forEach(function(optionName, i) {
       var newOption = newOptions[optionName], newIsAttachment = false;
@@ -2589,6 +2606,10 @@
     });
     if (!options.anchorSE[0] || !options.anchorSE[1] || options.anchorSE[0] === options.anchorSE[1]) {
       throw new Error('`start` and `end` are required.');
+    }
+
+    if (typeof(newOptions.svg)) {
+      props.customSvg = newOptions.svg;
     }
 
     // Check window.
@@ -3496,6 +3517,10 @@
     });
   })();
 
+  LeaderLine.prototype.getProps = function() {
+    return insProps[this._id];
+  };
+
   LeaderLine.prototype.setOptions = function(newOptions) {
     setOptions(insProps[this._id], newOptions);
     return this;
@@ -3516,7 +3541,7 @@
     if (curStats.show_animId) { anim.remove(curStats.show_animId); }
     props.attachments.slice().forEach(function(attachProps) { unbindAttachment(props, attachProps); });
 
-    if (props.baseWindow && props.svg) {
+    if (props.baseWindow && props.svg && !props.customSvg) {
       props.baseWindow.document.body.removeChild(props.svg);
     }
     delete insProps[this._id];
